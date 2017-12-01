@@ -1,0 +1,15 @@
+module.exports = {
+  id: null,
+  method: null,
+  base_url: null,
+  path: null,
+  content_type: null,
+  content_length: null,
+  time: null,
+  remote_addr: null,
+  form_data: null,
+  query_string: null,
+  headers: {},
+  raw: {},
+  body: {},
+};

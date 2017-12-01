@@ -1,7 +1,7 @@
 'use strict';
 
 var express = require('express');
-var redis = require("redis"),
+var redis = require("redis");
 var request = require('request');
 var requestIp = require('request-ip');
 var rangeCheck = require('range_check');

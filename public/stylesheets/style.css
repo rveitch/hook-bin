@@ -1,0 +1,48 @@
+body {
+  /*padding: 50px;*/
+  /* font: 14px "Lucida Grande", Helvetica, Arial, sans-serif; */
+}
+
+a {
+  color: #42b983;
+}
+
+a:hover {
+  color: #42b983; /* 42b983 */
+  text-decoration: none;
+}
+
+[v-cloak] {display: none}
+
+.binCard {
+  margin-bottom: 20px;
+}
+
+.hljs {
+  /*background: #f8f8f8 !important;*/
+}
+
+.btn-green {
+  color: #fff;
+  background-color: #4fc08d;
+  border-color: #4fc08d;
+}
+
+.pre-block {
+  display: block;
+  padding: 9.5px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 20px;
+  word-break: break-all;
+  word-wrap: break-word;
+  white-space: pre;
+  white-space: pre-wrap;
+  background-color: #f7f7f9;
+  /* background-color: #f5f5f5; */
+  border: 1px solid #ccc;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  -webkit-border-radius: 2px;
+  -moz-border-radius: 2px;
+  border-radius: 2px;
+}

@@ -1,0 +1,112 @@
+<% include partials/head %>
+<link rel="stylesheet" href="../stylesheets/style.css"> <!-- Global Style Sheet -->
+<% include partials/nav %>
+
+  <body>
+    <div id="app" class="container">
+
+      <div class="text-center my-4">
+        <p>Your HookShelf Endpoint:</p>
+        <form>
+          <div class="form-row">
+            <div class="col-4"></div>
+            <div class="col-4">
+              <input class="form-control form-control-lg mx-sm-3" type="text" <%- "value=" + currentUrl %> readonly>
+            </div>
+            <div class="co4"></div>
+          </div>
+        </form>
+      </div>
+
+      <div v-if="bin && bin.requests.length <= 0" class="text-center my-4" v-cloak>
+        <p>This bin is empty. Make a request to get started.</p>
+        <pre class="pre-block mx-auto w-50"><code>curl -X POST -d "fizz=buzz" {{ binURL }}</code></pre>
+      </div>
+
+      <div id="accordion" role="tablist">
+        <div class="card binCard" v-for="(request, index) in bin.requests" v-bind:key="index" v-cloak>
+          <div class="card-header" role="tab" v-bind:id="'heading-' + request.id">
+            <h6 class="mb-0">
+              <a data-toggle="collapse" v-bind:href="'#' + request.id" aria-expanded="isExpanded('index')" v-bind:aria-controls="request.id">
+                <span class="badge badge-secondary mr-2">{{ request.method }}</span><span class="align-middle">{{ moment(request.time, 'X').format('MMM D, YYYY h:mm:ss A') }} ({{ moment(request.time, 'X').fromNow() }})</span>
+              </a>
+            </h6>
+          </div>
+
+          <div v-bind:id="request.id" v-bind:class="{ collapse: true, show: isExpanded(index) }" role="tabpanel" v-bind:aria-labelledby="'heading-' + request.id" data-parent="#accordion">
+            <div class="card-header" style="background: #fafafa;">
+
+              <div class="container">
+                <div class="row">
+                  <div class="col-sm">
+                    <i class="fa fa-link font-weight-bold text-muted" aria-hidden="true"></i>&nbsp;{{ request.url.base_url }}
+                  </div>
+                  <div class="col-sm">
+                    <i class="fa fa-code font-weight-bold text-muted" aria-hidden="true"></i>&nbsp;{{ request.content_type }}
+                  </div>
+                  <div class="col-sm">
+                    <i class="fa fa-clock-o font-weight-bold text-muted" aria-hidden="true"></i>&nbsp;{{ moment(request.time, 'X').fromNow() }}
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-sm">
+                    <i class="fa fa-terminal font-weight-bold text-muted" aria-hidden="true"></i>&nbsp;<code class="pr-0">{{ request.url.path }}</code>
+                    <small class="text-muted">{{ request.url.query_string }}</small>
+                  </div>
+                  <div class="col-sm">
+                    <i class="fa fa-cloud-upload font-weight-bold text-muted" aria-hidden="true"></i>&nbsp;{{ request.content_length }} bytes
+                  </div>
+                  <div class="col-sm">
+                    <i class="fa fa-sign-in font-weight-bold text-muted" aria-hidden="true"></i>&nbsp;{{ request.remote_addr }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+
+              <div class="container mb-1">
+                <div class="row">
+                  <div class="col-sm">
+                    <p class="font-weight-bold text-muted">FORM/POST PARAMETERS</p>
+                    <p><small class="text-muted">N/A</small><p>
+                    <p class="font-weight-bold text-muted">QUERYSTRING</p>
+                    <p><small class="text-muted">N/A</small><p>
+                  </div>
+                  <div class="col-sm">
+                    <p class="font-weight-bold text-muted">HEADERS</p>
+                    <pre v-highlightjs="parseJson(request.headers)"><code class="json"></code></pre>
+                  </div>
+                </div>
+              </div>
+
+              <div class="container mb-0">
+                <div class="row">
+                  <div class="col-sm">
+                    <p class="font-weight-bold text-muted">BODY</p>
+                  </div>
+                </div>
+              </div>
+              <pre v-highlightjs="parseJson(request.body)"><code class="json"></code></pre>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- /accordion -->
+
+    </div>
+  </body>
+
+<script>
+</script>
+
+
+<script>
+  var routeBinId = '<%= binId %>';
+  var currentHostUrl = '<%= currentHostUrl %>';
+  var currentUrl = '<%= currentUrl %>';
+</script>
+<script src="../js/highlight.pack.js"></script> <!-- Highlight JS -->
+<% include partials/scripts %>
+<% include partials/vue-bin %>
+<% include partials/foot %>

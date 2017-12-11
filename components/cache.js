@@ -14,8 +14,3 @@ const cache = new redis.createClient({
 });
 
 module.exports = cache;
-
-//module.exports = {};
-
-//const Webhooks = {};
-// module.exports = Webhooks;

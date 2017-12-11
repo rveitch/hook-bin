@@ -9,12 +9,15 @@
     "content-length": "1.0.1",
     "cookie-parser": "1.4.3",
     "dotenv": "4.0.0",
+    "ejs": "2.5.7",
     "express": "4.16.2",
     "lodash": "4.17.4",
     "moment": "2.19.3",
+    "pusher": "1.5.1",
+    "randomcolor": "0.5.3",
     "redis": "2.8.0",
-    "request": "2.83.0",
     "request-ip": "2.0.2",
+    "serve-favicon": "2.4.5",
     "tinyid": "0.1.4"
   },
   "devDependencies": {

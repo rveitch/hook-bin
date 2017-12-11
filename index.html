@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<head>
+  <title>Pusher Test</title>
+  <head>
+
+  <head>
+    <style>
+    [v-cloak] {display: none}
+    /* [v-cloak] > * { display:none }
+    [v-cloak]::before { content: "loading…" } */
+  </style>
+
+  <body>
+    <div id="app">
+      <!--<pre><code>
+      {{ bin }}
+    </code></pre> -->
+      <ul>
+        <li v-for="(request, index) in bin.requests" v-bind:key="index" class="" v-cloak>
+          {{ request.id }} - {{ request.time }}
+        </li>
+      </ul>
+    </div>
+  </body>
+
+  <script src="https://js.pusher.com/4.1/pusher.min.js"></script> <!-- Pusher JS -->
+  <script src="https://vuejs.org/js/vue.min.js"></script> <!-- Vue Production Version -->
+  <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.3.4"></script> <!-- Vue Request Library -->
+  <script>
+  const binId = 'ynrxmll'; // TODO: Dynamically Set Bin ID based on route
+  const apiURL = `http://127.0.0.1:3000/api/bin/${binId}`;
+  var app2 = new Vue({
+    el: '#app',
+    data: {
+      bin: {},
+      binRequests: [],
+    },
+    created () {
+      this.subscribe(); // Subscribe to Pusher Channel
+      this.fetchData(); // Request Bin Data
+    },
+    methods: {
+      subscribe () {
+        // Pusher.logToConsole = true; // Enable pusher logging - don't include this in production
+        const pusherAppKey = 'e9a9bffb6fabc04ed457'; // TODO: insert dynamically?
+        const pusherCluster = 'us2'; // TODO: insert dynamically?
+        let pusher = new Pusher(pusherAppKey, {
+          cluster: pusherCluster,
+          encrypted: true
+        });
+        pusher.subscribe(`bin_${binId}`)
+        pusher.bind('bin-updated', data => {
+          // The unshift() method adds one or more elements to the beginning of an array and returns the new length of the array.
+          //this.binRequests.unshift(data.binRequest)
+          this.bin = data.bin;
+        })
+      },
+      fetchData: function() {
+        this.$http.get(apiURL).then(response => {
+          this.bin = response.body;
+        }, response => {
+          // error callback
+        });
+      }
+    },
+  })
+  </script>
+</head>

@@ -1,0 +1,47 @@
+<% include partials/head %>
+<link rel="stylesheet" href="../stylesheets/style.css"> <!-- Global Style Sheet -->
+<% include partials/nav %>
+
+  <body>
+    <div class="container-fluid">
+      <div class="row">
+
+        <div class="col-10">
+          <div class="container">
+            <div class="jumbotron text-center">
+              <h1>Inspect HTTP Requests</h1>
+              <p class="lead">HookStore gives you a URL that will collect requests made to it and let you inspect them in a human-friendly way.<br>
+                Use HookStore to see what your HTTP client is sending or to inspect and debug webhook requests.</p>
+                <div class="py-3">
+                  <a href="/create/bin" class="btn btn-green">
+                  <span class="fa fa-hdd-o" style="margin-right: 10px;"></span> Create a HookStore Bin</a>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-2">
+          <div id="app" class="card border-0 mb-3 mx-auto" style="max-width: 20rem;">
+            <div class="card-header bg-transparent border-0 pb-1"><i class="fa fa-history" aria-hidden="true"></i>&nbsp;History</div>
+            <div class="card-body pt-0">
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item py-1 px-0 border-0" v-for="(bin, index) in bins" v-bind:key="index" v-cloak>
+                  <i class="fa fa-circle" v-bind:style="{ color: bin.color }"></i>
+                  <a v-bind:href="'/bin/' + bin.id + '?inspect'">{{ bin.id }}</a> ({{ bin.requests_total }})
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </body>
+
+<script>
+  var currentHostUrl = '<%= currentHostUrl %>';
+</script>
+<% include partials/scripts %>
+<% include partials/vue-home %>
+<% include partials/foot %>

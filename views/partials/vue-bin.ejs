@@ -1,0 +1,57 @@
+<script>
+<% include vue-highlight-directive %>
+
+const binId = routeBinId;
+const binURL = `${currentHostUrl}/bin/${binId}`;
+const apiURL = `${currentHostUrl}/api/bin/${binId}`;
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    binId: routeBinId,
+    binURL: binURL,
+    apiURL: apiURL,
+    bin: false, // object
+    binRequests: null, // array
+    binIsEmpty: true,
+  },
+  created () {
+    this.fetchData(); // Request Bin Data
+    this.subscribe(); // Subscribe to Pusher Channel
+  },
+  methods: {
+    subscribe () {
+      //mPusher.logToConsole = true; // Enable pusher logging - don't include this in production
+      const pusherAppKey = 'e9a9bffb6fabc04ed457';
+      const pusherCluster = 'us2';
+      let pusher = new Pusher(pusherAppKey, {
+        cluster: pusherCluster,
+        encrypted: true
+      });
+      pusher.subscribe(`bin_${binId}`)
+      pusher.bind('bin-updated', data => {
+        // The unshift() method adds one or more elements to the beginning of an array and returns the new length of the array.
+        //this.binRequests.unshift(data.binRequest)
+        // this.bin = data.bin;
+        this.fetchData(); // sending whole bin can exceed pusher message size, so let's just trigger a new fetch
+      })
+    },
+    fetchData: function() {
+      this.$http.get(apiURL).then(response => {
+        this.bin = response.body;
+      }, response => {
+        // error callback
+      });
+    },
+    isExpanded: function (index) {
+        return (index <= 0) ? true : false;
+    },
+    parseJson: function (code) {
+        return JSON.stringify(code, null, 2);
+    },
+    randomColor: function () {
+        return randomColor();
+    },
+  },
+});
+</script>

@@ -1,0 +1,24 @@
+<script>
+const apiURL = `${currentHostUrl}/api/bins`;
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    bins: false, // array of bins sans requests
+    color: '#39AF78',
+  },
+  created () {
+    this.fetchData(); // Request Bin Data
+    //this.subscribe(); // Subscribe to Pusher Channel
+  },
+  methods: {
+    fetchData: function() {
+      this.$http.get(apiURL).then(response => {
+        this.bins = response.body;
+      }, response => {
+        // error callback
+      });
+    },
+  },
+});
+</script>

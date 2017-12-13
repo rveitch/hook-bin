@@ -157,7 +157,6 @@ app.put('/api/bin/:bin', (req, res) => {
   return getBin(binName).then((binData) => {
     const binKey = `bin_${binData.id}`;
     binData.name = req.body.name || binData.name;
-    console.log('req.body', binData);
     return storeBin(binKey, binData).then((result) => {
       const binChannel = `bin_${binName}`;
       pusher.trigger(binKey, 'bin-updated', {

@@ -11,6 +11,7 @@ var app = new Vue({
     binId: routeBinId,
     binURL: binURL,
     apiURL: apiURL,
+    currentHostUrl: currentHostUrl,
     bin: false, // object
     binRequests: null, // array
     binIsEmpty: true,
@@ -41,6 +42,29 @@ var app = new Vue({
         this.bin = response.body;
       }, response => {
         // error callback
+      });
+    },
+    saveSettings: function() {
+      var body = {
+        name: this.bin.name,
+      };
+      this.$http.put(apiURL, body).then(response => {
+        // success callback
+        // console.log(response.body);
+      }, response => {
+        // error callback
+        console.log('error with saveSettings request');
+      });
+    },
+    deleteBin: function() {
+      var body = {
+        name: this.bin.name,
+      };
+      this.$http.delete(apiURL, body).then(response => {
+        window.location.href = this.currentHostUrl;
+      }, response => {
+        // error callback
+        console.log('ERROR DELETING BIN');
       });
     },
     isExpanded: function (index) {

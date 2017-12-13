@@ -1,17 +1,22 @@
 <script>
 const apiURL = `${currentHostUrl}/api/bins`;
+const sessionBins = JSON.parse(sessionBinsString);
 
 var app = new Vue({
   el: '#app',
   data: {
     bins: false, // array of bins sans requests
-    color: '#39AF78',
+    session_bins: sessionBins,
   },
   created () {
     this.fetchData(); // Request Bin Data
+    // TODO: request bins by session bins array;
     //this.subscribe(); // Subscribe to Pusher Channel
   },
   methods: {
+    subscribe () {
+      // TODO: figure out a subscription method for the bins a user is subscribed to
+    },
     fetchData: function() {
       this.$http.get(apiURL).then(response => {
         this.bins = response.body;

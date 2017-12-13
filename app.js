@@ -5,6 +5,9 @@ const _ = require('lodash');
 const Promise = require('bluebird');
 const path = require('path');
 const express = require('express');
+const cors = require('cors')
+const session = require('express-session');
+const RedisStore = require('connect-redis')(session);
 const favicon = require('serve-favicon');
 const requestIp = require('request-ip');
 const bodyParser = require('body-parser');
@@ -33,6 +36,7 @@ const pusher = new Pusher({ // TODO: set these in environment variales
 
 /* ***************************** EXPRESS SETUP ****************************** */
 
+app.use(cors());
 app.use(requestIp.mw());
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -44,13 +48,32 @@ app.set('view engine', 'ejs');
 app.set('json spaces', 2);
 app.enable('trust proxy');
 
+app.use(session({
+  store: new RedisStore({
+    client: cache,
+    // host: process.env.REDIS_HOST || 'ec2-34-227-234-245.compute-1.amazonaws.com',
+    // port: process.env.REDIS_PORT || 55269,
+  }),
+  secret: 'hooksarefun',
+  resave: false,
+  cookie: {
+    maxAge: 7776000000,
+  },
+  bins: [],
+}));
+
 /* ***************************** EXPRESS ROUTES ***************************** */
 
 // Home
 app.all('/', (req, res) => {
+  // console.log('req.session', req.session);
   const currentHost = (req.hostname === 'localhost') ? `localhost:${port}` : req.hostname;
+
+  console.log(req.session.bins);
+
   res.render('index.ejs', {
     currentHostUrl: `${req.protocol}://${currentHost}`,
+    sessionBins: req.session.bins || [],
   });
 });
 
@@ -69,6 +92,14 @@ app.all('/create/bin', (req, res) => {
     private: false, // TODO
     secret_key: '', // TODO: os.urandom(24) if private else
   };
+
+  // Update Session Storage
+  if (req.session.bins) { // TODO: also check if is array?
+    req.session.bins.push(binKey);
+  } else {
+    req.session.bins = [binKey];
+  }
+
   storeBin(binKey, binData).then(() => res.redirect(`/bin/${binName}?inspect`));
 });
 
@@ -109,12 +140,41 @@ app.all('/api/bins', (req, res) => {
 
 // API: Get Bin by ID
 app.get('/api/bin/:bin', (req, res) => {
-  res.append('Access-Control-Allow-Origin', '*');
+  // res.append('Access-Control-Allow-Origin', '*');
   if (!req.params.bin) {
     return res.status(401).json({ error: 'Bin is required.' });
   }
   const binName = req.params.bin;
   return getBin(binName).then((binData) => res.json(binData));
+});
+
+// API: Update Bin by ID
+app.put('/api/bin/:bin', (req, res) => {
+  if (!req.params.bin) {
+    return res.status(401).json({ error: 'Bin is required.' });
+  }
+  const binName = req.params.bin;
+  return getBin(binName).then((binData) => {
+    const binKey = `bin_${binData.id}`;
+    binData.name = req.body.name || binData.name;
+    console.log('req.body', binData);
+    return storeBin(binKey, binData).then((result) => {
+      const binChannel = `bin_${binName}`;
+      pusher.trigger(binKey, 'bin-updated', {
+        updated: true,
+      });
+      return res.send('ok');
+    });
+  });
+});
+
+// API: Update Bin by ID
+app.delete('/api/bin/:bin', (req, res) => {
+  if (!req.params.bin) {
+    return res.status(401).json({ error: 'Bin is required.' });
+  }
+  const binName = req.params.bin;
+  return deleteBin(binName).then(() => res.send('ok'));
 });
 
 /* ****************************** HELPER FUNCTIONS ************************** */
@@ -127,6 +187,18 @@ function getBin(binId) {
         reject(err);
       }
       resolve(JSON.parse(binData));
+    });
+  });
+}
+
+function deleteBin(binId) {
+  const binKey = `bin_${binId}`;
+  return new Promise((resolve, reject) => {
+    cache.del(binKey, (err, response) => {
+      if (err) {
+        reject(err);
+      }
+      resolve(response);
     });
   });
 }
@@ -173,7 +245,6 @@ function storeBin(binKey, binData) {
       }
       getBin(binName).then((bin) => {
         const binChannel = `bin_${binName}`;
-        console.log('updated binChannel:', binChannel, bin); // TODO: remove
         pusher.trigger(binChannel, 'bin-updated', {
           // bin: bin, // sending whole bin can exceed pusher message size, so let's just trigger a new fetch
           updated: true,

@@ -18,7 +18,16 @@ var app = new Vue({
       // TODO: figure out a subscription method for the bins a user is subscribed to
     },
     fetchData: function() {
-      this.$http.get(apiURL).then(response => {
+      const requestUrl = apiURL; // TODO: send sessionBins array OR get all OR none;
+      const params = {
+        sessionBins: this.session_bins,
+      };
+      const paramOptions = {
+        params
+      };
+
+      console.log(paramOptions);
+      this.$http.get(requestUrl, paramOptions).then(response => {
         this.bins = response.body;
       }, response => {
         // error callback

@@ -5,7 +5,8 @@ const _ = require('lodash');
 const Promise = require('bluebird');
 const path = require('path');
 const express = require('express');
-const cors = require('cors')
+const cors = require('cors');
+const ipaddr = require('ipaddr.js');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 const favicon = require('serve-favicon');
@@ -69,7 +70,7 @@ app.all('/', (req, res) => {
   // console.log('req.session', req.session);
   const currentHost = (req.hostname === 'localhost') ? `localhost:${port}` : req.hostname;
 
-  console.log(req.session.bins);
+  console.log(req.session.bins); // TODO: remove
 
   res.render('index.ejs', {
     currentHostUrl: `${req.protocol}://${currentHost}`,
@@ -84,7 +85,7 @@ app.all('/create/bin', (req, res) => {
   const binData = {
     id: binName,
     name: null,
-    originIp: req.clientIp || req.ip || null,
+    originIp: getIp(req),
     created: moment().unix(),
     requests: [],
     color: randomColor(),
@@ -97,6 +98,7 @@ app.all('/create/bin', (req, res) => {
   if (req.session.bins) { // TODO: also check if is array?
     req.session.bins.push(binKey);
   } else {
+    req.session.id = getIp(req);
     req.session.bins = [binKey];
   }
 
@@ -133,9 +135,16 @@ app.all('/bin/:bin', (req, res) => {
   });
 });
 
+
+/* ****************************** API ROUTES ******************************** */
+
 // API: Get All Bins (Without Requests Included)
 app.all('/api/bins', (req, res) => {
-  getAllBins().then((binKeys) => res.json(binKeys));
+  // const isAllBins = _.indexOf(_.keys(req.query), 'all') !== -1;
+  // getAllBins().then((binKeys) => res.json(binKeys));
+
+  const sessionBins = (req.query.sessionBins && _.isObject(req.query.sessionBins)) ? req.query.sessionBins : [];
+  getSessionBins(sessionBins).then((bins) => res.json(bins));
 });
 
 // API: Get Bin by ID
@@ -177,6 +186,15 @@ app.delete('/api/bin/:bin', (req, res) => {
 });
 
 /* ****************************** HELPER FUNCTIONS ************************** */
+
+function getIp(req) {
+  const unformattedIp = req.clientIp || req.ip || null;
+  if (unformattedIp) {
+    return null;
+  }
+  const reqIp = (unformattedIp === '::1' || unformattedIp === '::ffff:127.0.0.1') ? '127.0.0.1' : unformattedIp;
+  return reqIp;
+}
 
 function getBin(binId) {
   const binKey = `bin_${binId}`;
@@ -234,6 +252,21 @@ function getAllBins() {
   });
 }
 
+function getSessionBins(binsArray) {
+  const binKeys = binsArray;
+  return new Promise((resolve, reject) => {
+    cache.mget(binKeys, (error, allBins) => {
+      const binMap = _.map(_.compact(allBins), (currentBinObject) => { // TODO: remove these missing bins from the session object
+        const bin = JSON.parse(currentBinObject);
+        bin.requests_total = bin.requests.length;
+        bin.requests = [];
+        return bin;
+      });
+      resolve(binMap);
+    });
+  });
+}
+
 function storeBin(binKey, binData) {
   const binName = binData.id;
   return new Promise((resolve, reject) => {
@@ -275,7 +308,7 @@ function formatRequest(req) {
       content_type: (req.is(contentTypeHeader) && contentTypeHeader) || null,
       content_length: req.get('content-length') || req.length || null,
       time: moment().unix(),
-      remote_addr: req.clientIp || req.ip || null,
+      remote_addr: getIp(req),
       form_data: null, // TODO: multer? https://stackoverflow.com/questions/37630419/how-to-handle-formdata-from-express-4
       query_string: req.query || {},
       headers: req.headers || {},

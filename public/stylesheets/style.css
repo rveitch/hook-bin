@@ -22,11 +22,45 @@ a:hover {
   background: #f7f7f9 !important; /* f8f8f8, #f7f7f9, f5f5f5 */
 }
 
+.jumbotron {
+  background-color: #F4F4F4F4;
+}
+
 .btn-green {
   color: #fff;
   background-color: #4fc08d;
   border-color: #4fc08d;
 }
+
+.btn-success {
+  color: #fff;
+  background-color: #4fc08d;
+  border-color: #4fc08d;
+}
+
+.btn-success:hover {
+  color: #4fc08d;
+  background-color: #F6F6F6;
+  border-color: #4fc08d;
+}
+
+.btn-outline-success {
+  color: #4fc08d;
+  background-color: transparent;
+  border-color: #4fc08d;
+}
+
+.btn-outline-success:hover {
+  color: #fff;
+  background-color: #4fc08d;
+  border-color: #4fc08d;
+}
+
+/* .btn-danger {
+  color: #fff;
+  background-color: #FF6666;
+  border-color: #FF6666;
+} */
 
 .pre-block {
   display: block;

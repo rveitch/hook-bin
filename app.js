@@ -189,7 +189,7 @@ app.delete('/api/bin/:bin', (req, res) => {
 
 function getIp(req) {
   const unformattedIp = req.clientIp || req.ip || null;
-  if (unformattedIp) {
+  if (!unformattedIp) {
     return null;
   }
   const reqIp = (unformattedIp === '::1' || unformattedIp === '::ffff:127.0.0.1') ? '127.0.0.1' : unformattedIp;

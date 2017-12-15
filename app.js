@@ -58,7 +58,7 @@ app.use(session({
   secret: 'hooksarefun',
   resave: false,
   cookie: {
-    maxAge: 7776000000,
+    maxAge: 2592000000, // 30 days in miliseconds
   },
   bins: [],
 }));
@@ -270,8 +270,7 @@ function getSessionBins(binsArray) {
 function storeBin(binKey, binData) {
   const binName = binData.id;
   return new Promise((resolve, reject) => {
-    // cache.set('key', 'value!', 'EX', 10); // this key will expire after 10 seconds // TODO
-    cache.set(binKey, JSON.stringify(binData), (err, value) => {
+    cache.set(binKey, JSON.stringify(binData), 'EX', 2592000, (err, value) => { // Expire in 30 days
       if (err) {
         reject(err);
       }

@@ -130,7 +130,12 @@ app.all('/bin/:bin', (req, res) => {
       binData.requests = binRequests;
       // TODO: reduce/limit requests array to something like 20-50 requests.
       const binKey = `bin_${binData.id}`;
-      return storeBin(binKey, binData).then((result) => res.send('ok'));
+      return storeBin(binKey, binData).then((result) => {
+        if (req.param('hub.mode') === 'subscribe') {
+          return res.send(req.param('hub.challenge'));
+        }
+        return res.status(200).send('ok');
+      });
     });
   });
 });

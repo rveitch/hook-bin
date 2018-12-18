@@ -1,5 +1,6 @@
 /* eslint-disable new-cap, no-console, no-param-reassign, no-unused-vars */
 // LIBRARIES
+const crypto = require('crypto');
 const dotenv = require('dotenv');
 const _ = require('lodash');
 const Promise = require('bluebird');
@@ -129,6 +130,13 @@ app.all('/bin/:bin', (req, res) => {
       return storeBin(binKey, binData).then((result) => {
         if (req.param('hub.mode') === 'subscribe') {
           return res.send(req.param('hub.challenge'));
+        }
+        if (req.param('crc_token')) {
+          const responseToken = crypto.createHmac('sha256', process.env.TWITTER_APP_SECRET || '').update(req.param('crc_token')).digest('base64');
+          res.status(200);
+          return res.send({
+            response_token: `sha256=${responseToken}`,
+          });
         }
         return res.status(200).send('ok');
       });

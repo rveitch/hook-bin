@@ -122,6 +122,16 @@ app.all('/bin/:bin', (req, res) => {
 
     // Log Incoming Request
     return formatRequest(req).then((formattedRequestData) => {
+      if (!binData) {
+        const errMessage = `Error: Bin ${binName} does not exist, request and webhook payload will not be stored.`
+        console.log(errMessage, `IP: ${_.get(formattedRequestData, 'remote_addr')}`);
+        return res.status(404).send(errMessage);
+      }
+
+      if (!binData.requests) {
+        binData.requests = [];
+      }
+
       binData.requests.push(formattedRequestData);
       const binRequests = _.reverse(_.sortBy(binData.requests, ['time']));
       binData.requests = binRequests;

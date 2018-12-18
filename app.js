@@ -27,11 +27,11 @@ const port = Number(process.env.PORT || 3000);
 
 /* ****************************** PUSHER SETUP ****************************** */
 
-const pusher = new Pusher({ // TODO: set these in environment variales
-  appId: '443219',
-  key: 'e9a9bffb6fabc04ed457',
-  secret: '3d46ecae363faad7bf80',
-  cluster: 'us2',
+const pusher = new Pusher({
+  app_id: process.env.PUSHER_APP_ID,
+  key: process.env.PUSHER_KEY,
+  secret: process.env.PUSHER_SECRET,
+  cluster: process.env.PUSHER_CLUSTER,
   encrypted: true,
 });
 

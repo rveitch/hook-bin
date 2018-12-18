@@ -6,7 +6,6 @@ const Promise = require('bluebird');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
-const ipaddr = require('ipaddr.js');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 const favicon = require('serve-favicon');
@@ -67,10 +66,7 @@ app.use(session({
 
 // Home
 app.all('/', (req, res) => {
-  // console.log('req.session', req.session);
   const currentHost = (req.hostname === 'localhost') ? `localhost:${port}` : req.hostname;
-
-  console.log(req.session.bins); // TODO: remove
 
   res.render('index.ejs', {
     currentHostUrl: `${req.protocol}://${currentHost}`,

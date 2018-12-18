@@ -1,12 +1,12 @@
 /* eslint-disable new-cap, no-console, no-param-reassign, no-unused-vars */
 // LIBRARIES
+const crypto = require('crypto');
 const dotenv = require('dotenv');
 const _ = require('lodash');
 const Promise = require('bluebird');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
-const ipaddr = require('ipaddr.js');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 const favicon = require('serve-favicon');
@@ -27,11 +27,11 @@ const port = Number(process.env.PORT || 3000);
 
 /* ****************************** PUSHER SETUP ****************************** */
 
-const pusher = new Pusher({ // TODO: set these in environment variales
-  appId: '443219',
-  key: 'e9a9bffb6fabc04ed457',
-  secret: '3d46ecae363faad7bf80',
-  cluster: 'us2',
+const pusher = new Pusher({
+  app_id: process.env.PUSHER_APP_ID,
+  key: process.env.PUSHER_KEY,
+  secret: process.env.PUSHER_SECRET,
+  cluster: process.env.PUSHER_CLUSTER,
   encrypted: true,
 });
 
@@ -67,10 +67,7 @@ app.use(session({
 
 // Home
 app.all('/', (req, res) => {
-  // console.log('req.session', req.session);
   const currentHost = (req.hostname === 'localhost') ? `localhost:${port}` : req.hostname;
-
-  console.log(req.session.bins); // TODO: remove
 
   res.render('index.ejs', {
     currentHostUrl: `${req.protocol}://${currentHost}`,
@@ -133,6 +130,13 @@ app.all('/bin/:bin', (req, res) => {
       return storeBin(binKey, binData).then((result) => {
         if (req.param('hub.mode') === 'subscribe') {
           return res.send(req.param('hub.challenge'));
+        }
+        if (req.param('crc_token')) {
+          const responseToken = crypto.createHmac('sha256', process.env.TWITTER_APP_SECRET || '').update(req.param('crc_token')).digest('base64');
+          res.status(200);
+          return res.send({
+            response_token: `sha256=${responseToken}`,
+          });
         }
         return res.status(200).send('ok');
       });

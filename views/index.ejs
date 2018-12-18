@@ -41,7 +41,7 @@
 
 <script>
   var currentHostUrl = '<%= currentHostUrl %>';
-  var sessionBinsString = '<%- JSON.stringify(sessionBins) %>';
+  var sessionBinsString = '<%- JSON.stringify(sessionBins || []) %>';
 </script>
 <% include partials/scripts %>
 <% include partials/vue-home %>

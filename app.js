@@ -1,7 +1,7 @@
 /* eslint-disable new-cap, no-console, no-param-reassign, no-unused-vars */
 // LIBRARIES
+const dotenv = require('dotenv').config();
 const crypto = require('crypto');
-const dotenv = require('dotenv');
 const _ = require('lodash');
 const Promise = require('bluebird');
 const path = require('path');
@@ -21,9 +21,9 @@ const randomColor = require('randomcolor');
 // COMPONENTS
 const cache = require('./components/cache');
 
-dotenv.load();
 const app = express();
 const port = Number(process.env.PORT || 3000);
+const TwitterAppSecret = process.env.TWITTER_APP_SECRET;
 
 /* ****************************** PUSHER SETUP ****************************** */
 
@@ -47,21 +47,25 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.set('json spaces', 2);
-app.enable('trust proxy');
+app.set('trust proxy', 1);
 
-app.use(session({
+const sessionConfig = {
   store: new RedisStore({
     client: cache,
-    // host: process.env.REDIS_HOST || 'ec2-34-227-234-245.compute-1.amazonaws.com',
-    // port: process.env.REDIS_PORT || 55269,
   }),
   secret: 'hooksarefun',
   resave: false,
+  saveUninitialized: true,
   cookie: {
-    maxAge: 2592000000, // 30 days in miliseconds
+    maxAge: 2592000000, // 30 days in milliseconds
   },
   bins: [],
-}));
+};
+
+if (app.get('env') === 'production') {
+  sessionConfig.cookie.secure = true // serve secure cookies
+}
+app.use(session(sessionConfig));
 
 /* ***************************** EXPRESS ROUTES ***************************** */
 
@@ -71,7 +75,7 @@ app.all('/', (req, res) => {
 
   res.render('index.ejs', {
     currentHostUrl: `${req.protocol}://${currentHost}`,
-    sessionBins: req.session.bins || [],
+    sessionBins: _.get(req, 'session.bins', []),
   });
 });
 
@@ -87,101 +91,106 @@ app.all('/create/bin', (req, res) => {
     requests: [],
     color: randomColor(),
     favicon_uri: '', // TODO?
-    private: false, // TODO
-    secret_key: '', // TODO: os.urandom(24) if private else
+    private: false, // TODO?
+    secret_key: '', // TODO: os.urandom(24) if private else ?
   };
 
   // Update Session Storage
-  if (req.session.bins) { // TODO: also check if is array?
-    req.session.bins.push(binKey);
-  } else {
-    req.session.id = getIp(req);
-    req.session.bins = [binKey];
+  const session = _.get(req, 'session');
+  if (session) {
+    if (req.session.bins) {
+      req.session.bins.push(binKey);
+    } else {
+      req.session.id = getIp(req);
+      req.session.bins = [binKey];
+    }
   }
 
   storeBin(binKey, binData).then(() => res.redirect(`/bin/${binName}?inspect`));
 });
 
 // Bin Route (Inspect & Log Request)
-app.all('/bin/:bin', (req, res) => {
-  if (!req.params.bin) {
+app.all('/bin/:bin', async (req, res) => {
+  const binName = _.get(req, 'params.bin');
+  if (!binName) {
     return res.status(401).json({ error: 'Bin is required.' });
   }
-  const binName = req.params.bin;
+
+  // Render Front End
   const isInspect = _.indexOf(_.keys(req.query), 'inspect') !== -1;
-
-  return getBin(binName).then((binData) => {
-    if (isInspect) {
-      const currentHost = (req.hostname === 'localhost') ? `localhost:${port}` : req.hostname;
-      return res.render('bin.ejs', {
-        currentUrl: `${req.protocol}://${currentHost}/bin/${binName}`,
-        currentHostUrl: `${req.protocol}://${currentHost}`,
-        binId: binName,
-      });
-    }
-
-    // Log Incoming Request
-    return formatRequest(req).then((formattedRequestData) => {
-      if (!binData) {
-        const errMessage = `Error: Bin ${binName} does not exist, request and webhook payload will not be stored.`
-        console.log(errMessage, `IP: ${_.get(formattedRequestData, 'remote_addr')}`);
-        return res.status(404).send(errMessage);
-      }
-
-      if (!binData.requests) {
-        binData.requests = [];
-      }
-
-      binData.requests.push(formattedRequestData);
-      const binRequests = _.reverse(_.sortBy(binData.requests, ['time']));
-      binData.requests = binRequests;
-      // TODO: reduce/limit requests array to something like 20-50 requests.
-      const binKey = `bin_${binData.id}`;
-      return storeBin(binKey, binData).then((result) => {
-        if (req.param('hub.mode') === 'subscribe') {
-          return res.send(req.param('hub.challenge'));
-        }
-        if (req.param('crc_token')) {
-          const responseToken = crypto.createHmac('sha256', process.env.TWITTER_APP_SECRET || '').update(req.param('crc_token')).digest('base64');
-          res.status(200);
-          return res.send({
-            response_token: `sha256=${responseToken}`,
-          });
-        }
-        return res.status(200).send('ok');
-      });
+  if (isInspect) {
+    const currentHost = (req.hostname === 'localhost') ? `localhost:${port}` : req.hostname;
+    return res.render('bin.ejs', {
+      currentUrl: `${req.protocol}://${currentHost}/bin/${binName}`,
+      currentHostUrl: `${req.protocol}://${currentHost}`,
+      binId: binName,
     });
-  });
+  }
+
+  // Log Incoming Webhook Request
+  const binData = await getBin(binName);
+  if (!binData) {
+    const errMessage = `Error: Bin ${binName} does not exist, request and webhook payload will not be stored.`
+    console.log(errMessage, `IP: ${_.get(getIp(req), 'remote_addr')}`);
+    return res.status(404).send(errMessage);
+  }
+
+  if (!binData.requests) {
+    binData.requests = [];
+  }
+
+  const formattedRequestData = await formatRequest(req);
+  binData.requests = _.reverse(_.sortBy(_.concat([], binData.requests, formattedRequestData), ['time']));
+  await storeBin(`bin_${binData.id}`, binData);
+
+  // Facebook Response Challenge
+  if (req.query['hub.mode'] === 'subscribe') {
+    return res.send(req.query['hub.challenge']);
+  }
+
+  // Twitter Response Token
+  const twitterCrcToken = _.get(req, 'query.crc_token');
+  if (twitterCrcToken && TwitterAppSecret) {
+    const responseToken = crypto.createHmac('sha256', TwitterAppSecret).update(twitterCrcToken).digest('base64');
+    res.status(200);
+    return res.send({
+      response_token: `sha256=${responseToken}`,
+    });
+  }
+
+  // Generic Response
+  return res.status(200).send('ok');
 });
 
 
 /* ****************************** API ROUTES ******************************** */
 
-// API: Get All Bins (Without Requests Included)
+// API: Get Session Bins (Without Requests Included)
 app.all('/api/bins', (req, res) => {
-  // const isAllBins = _.indexOf(_.keys(req.query), 'all') !== -1;
-  // getAllBins().then((binKeys) => res.json(binKeys));
-
   const sessionBins = (req.query.sessionBins && _.isObject(req.query.sessionBins)) ? req.query.sessionBins : [];
+  if (!sessionBins.length) {
+    return res.json([]);
+  }
   getSessionBins(sessionBins).then((bins) => res.json(bins));
 });
 
 // API: Get Bin by ID
 app.get('/api/bin/:bin', (req, res) => {
-  // res.append('Access-Control-Allow-Origin', '*');
-  if (!req.params.bin) {
+  const binName = req.params.bin;
+  if (!binName) {
     return res.status(401).json({ error: 'Bin is required.' });
   }
-  const binName = req.params.bin;
+
   return getBin(binName).then((binData) => res.json(binData));
 });
 
 // API: Update Bin by ID
 app.put('/api/bin/:bin', (req, res) => {
-  if (!req.params.bin) {
+  const binName = req.params.bin;
+  if (!binName) {
     return res.status(401).json({ error: 'Bin is required.' });
   }
-  const binName = req.params.bin;
+
   return getBin(binName).then((binData) => {
     const binKey = `bin_${binData.id}`;
     binData.name = req.body.name || binData.name;
@@ -197,10 +206,11 @@ app.put('/api/bin/:bin', (req, res) => {
 
 // API: Update Bin by ID
 app.delete('/api/bin/:bin', (req, res) => {
-  if (!req.params.bin) {
+  const binName = req.params.bin;
+  if (!binName) {
     return res.status(401).json({ error: 'Bin is required.' });
   }
-  const binName = req.params.bin;
+
   return deleteBin(binName).then(() => res.send('ok'));
 });
 

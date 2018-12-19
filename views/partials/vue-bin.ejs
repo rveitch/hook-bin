@@ -22,17 +22,26 @@ var app = new Vue({
   },
   methods: {
     subscribe () {
-      //mPusher.logToConsole = true; // Enable pusher logging - don't include this in production
-      const pusherAppKey = 'e9a9bffb6fabc04ed457';
-      const pusherCluster = 'us2';
+      if (!binId) {
+        console.log('Error: Real-time updates not enabled. binId is missing, unable to subscribe to Pusher channel.');
+        return;
+      }
+
+      if (!pusherAppKey || !pusherCluster) {
+        console.log('Error: Real-time updates not enabled. Pusher configuration may be missing or invalid.');
+        return;
+      }
+
+      // mPusher.logToConsole = true; // Enable pusher logging - don't include this in production
       let pusher = new Pusher(pusherAppKey, {
         cluster: pusherCluster,
         encrypted: true
       });
+
       pusher.subscribe(`bin_${binId}`)
       pusher.bind('bin-updated', data => {
         // The unshift() method adds one or more elements to the beginning of an array and returns the new length of the array.
-        //this.binRequests.unshift(data.binRequest)
+        // this.binRequests.unshift(data.binRequest)
         // this.bin = data.bin;
         this.fetchData(); // sending whole bin can exceed pusher message size, so let's just trigger a new fetch
       })

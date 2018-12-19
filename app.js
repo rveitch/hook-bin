@@ -124,6 +124,8 @@ app.all('/bin/:bin', async (req, res) => {
       currentUrl: `${req.protocol}://${currentHost}/bin/${binName}`,
       currentHostUrl: `${req.protocol}://${currentHost}`,
       binId: binName,
+      pusherAppKey: process.env.PUSHER_KEY,
+      pusherCluster: process.env.PUSHER_CLUSTER,
     });
   }
 

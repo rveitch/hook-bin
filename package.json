@@ -15,7 +15,7 @@
     "express": "4.16.2",
     "express-session": "1.15.6",
     "ipaddr.js": "1.5.4",
-    "lodash": "4.17.11",
+    "lodash": "4.17.15",
     "moment": "2.19.3",
     "pusher": "1.5.1",
     "randomcolor": "0.5.3",

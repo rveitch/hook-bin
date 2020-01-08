@@ -152,6 +152,13 @@ app.all('/bin/:bin', async (req, res) => {
     return res.send(req.query['challenge']);
   }
 
+  // OneDrive Response Challenge
+  if (req.query['validationtoken']) {
+    res.set('Content-Type', 'text/plain');
+    res.set('X-Content-Type-Options', 'nosniff');
+    return res.send(req.query['challenge']);
+  }
+
   // Facebook Response Challenge
   if (req.query['hub.mode'] === 'subscribe') {
     return res.send(req.query['hub.challenge']);

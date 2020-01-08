@@ -153,10 +153,10 @@ app.all('/bin/:bin', async (req, res) => {
   }
 
   // OneDrive Response Challenge
-  if (req.query['validationtoken']) {
+  if (req.query['validationToken']) {
     res.set('Content-Type', 'text/plain');
     res.set('X-Content-Type-Options', 'nosniff');
-    return res.send(req.query['validationtoken']);
+    return res.send(req.query['validationToken']);
   }
 
   // Facebook Response Challenge

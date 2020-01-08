@@ -156,7 +156,7 @@ app.all('/bin/:bin', async (req, res) => {
   if (req.query['validationtoken']) {
     res.set('Content-Type', 'text/plain');
     res.set('X-Content-Type-Options', 'nosniff');
-    return res.send(req.query['challenge']);
+    return res.send(req.query['validationtoken']);
   }
 
   // Facebook Response Challenge
